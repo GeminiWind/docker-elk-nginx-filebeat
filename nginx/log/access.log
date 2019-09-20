@@ -1,0 +1,5 @@
+192.168.32.1 - - [20/Sep/2019:09:34:07 +0000] "GET / HTTP/1.1" 200 15 "-" "PostmanRuntime/7.16.3" "-"
+192.168.144.1 - - [20/Sep/2019:10:18:13 +0000] "GET / HTTP/1.1" 200 15 "-" "PostmanRuntime/7.16.3" "-"
+172.23.0.1 - - [20/Sep/2019:11:02:20 +0000] "GET / HTTP/1.1" 200 15 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36" "-"
+172.23.0.1 - - [20/Sep/2019:11:02:20 +0000] "GET /robots.txt HTTP/1.1" 404 149 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36" "-"
+172.23.0.1 - - [20/Sep/2019:11:02:20 +0000] "GET /favicon.ico HTTP/1.1" 404 150 "http://localhost/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36" "-"
