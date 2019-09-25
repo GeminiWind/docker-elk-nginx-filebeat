@@ -67,13 +67,11 @@ services:
       - elasticsearch
 
   app:
-    image: node:8.16.0-jessie
-    container_name: app
+    build : ./app
     volumes:
       - ./app/:/usr/src/app
       - /usr/src/app/node_modules/ # make node_module empty in container
-    command: bash -c "cd /usr/src/app && npm install && npm start"
-    restart: always
+    command: npm start
     ports:
       - "3000:3000"
     networks:
