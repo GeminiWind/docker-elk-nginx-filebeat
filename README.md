@@ -1,61 +1,125 @@
-# Elastic stack (ELK) + Filebeat for Monitoring Nginx on Docker
+# Docker ELK + Nginx + Filebeat
 
-This is extended version from [ELK on Docker](https://github.com/deviantony/docker-elk) with Filebeat plugin. Filebeat takes in charge of streaming log file from nginx to Logstash then processing it and visualize to Kibana.
+Dockerized ELK stack with an Nginx reverse proxy in front of a small Express app.  
+Nginx access/error logs are collected by Filebeat, parsed in Logstash, indexed into Elasticsearch, and visualized in Kibana.
 
-## What 's insides 
+## Architecture
 
-```
-├── app
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── src
-│   │   └── index.js
-│   └── yarn.lock
-├── elasticsearch
-│   ├── config
-│   │   └── elasticsearch.yml
-│   └── Dockerfile
-├── filebeat
-│   ├── config
-│   │   └── filebeat.yml
-│   └── Dockerfile
-├── kibana
-│   ├── config
-│   │   └── kibana.yml
-│   └── Dockerfile
-├── logstash
-│   ├── config
-│   │   └── logstash.yml
-│   ├── Dockerfile
-│   └── pipeline
-│       └── nginx.conf
-├── nginx
-│   ├── config
-│   │   └── site.conf
-│   ├── Dockerfile
-│   └── log
-│       ├── access.log
-│       └── error.log
+Log flow:
+
+`Nginx (/var/log/nginx/*.log) -> Filebeat -> Logstash (beats input :5044) -> Elasticsearch (index: weblogs-YYYY.MM.dd) -> Kibana`
+
+Main services:
+
+- `app`: Express app exposing `GET /` on port `3000`
+- `nginx`: reverse proxy to `app:3000`, writes logs to mounted `./nginx/log`
+- `filebeat`: tails `/var/log/nginx/*.log`, sends events to Logstash
+- `logstash`: parses Nginx combined logs via `grok`, enriches with `geoip` and `useragent`
+- `elasticsearch`: single-node cluster with security enabled
+- `kibana`: UI for searching and visualizing indexed logs
+
+## Versions
+
+- ELK images (Elasticsearch, Logstash, Kibana): from `.env` `ELK_VERSION=7.3.1`
+- Filebeat image: pinned to `7.3.2` in `filebeat/Dockerfile`
+
+## Repository Layout
+
+```text
+.
+├── app/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── src/index.js
+├── elasticsearch/
+│   ├── Dockerfile
+│   └── config/elasticsearch.yml
+├── filebeat/
+│   ├── Dockerfile
+│   └── config/filebeat.yml
+├── kibana/
+│   ├── Dockerfile
+│   └── config/kibana.yml
+├── logstash/
+│   ├── Dockerfile
+│   ├── config/logstash.yml
+│   └── pipeline/nginx.conf
+├── nginx/
+│   ├── Dockerfile
+│   ├── config/site.conf
+│   └── log/
 ├── docker-compose.yml
-├── LICENSE
-└── README.md
+└── .env
 ```
 
-- App: minimal simple Express app
-- Nginx: web server for app.
-- Elasticsearch: containing build image and configure for Elasticsearch
-- Filebeat: containing build image and configure for Filebeat to streaming log of Nginx to Logstash
-- Logstash: containing build image and configure pipeline for Logstash to process sent log file from Filebeat
-- Kibana: containing build image and configure for Kibana to visualize data
+## Exposed Ports
 
-## Getting Started
+- `80`: Nginx
+- `443`: Nginx (mapped, no TLS config included by default)
+- `3000`: Express app
+- `5601`: Kibana
+- `9200`: Elasticsearch HTTP API
+- `9300`: Elasticsearch transport
+- `5000`: Logstash TCP input (exposed)
+- `9600`: Logstash monitoring API
 
-To run this stack, run the following command
+## Quick Start
+
+1. Start the stack:
+
 ```bash
-docker-compose up
+docker compose up --build
 ```
-Then go to `http://localhost:5601` to see your data in Kibana
 
-Default Kibana user information
-- Username: elastic
-- Password: changeme
+2. Generate some Nginx traffic:
+
+```bash
+curl http://localhost/
+```
+
+3. Open Kibana:
+
+`http://localhost:5601`
+
+4. Log in with:
+
+- Username: `elastic`
+- Password: `changeme`
+
+5. In Kibana, create a data view for:
+
+`weblogs-*`
+
+Use `@timestamp` as the time field.
+
+## Useful Commands
+
+Start in detached mode:
+
+```bash
+docker compose up -d --build
+```
+
+Check logs:
+
+```bash
+docker compose logs -f nginx filebeat logstash
+```
+
+Stop and remove containers:
+
+```bash
+docker compose down
+```
+
+Stop and also remove Elasticsearch volume:
+
+```bash
+docker compose down -v
+```
+
+## Notes
+
+- Security is enabled with default credentials (`elastic/changeme`) intended for local development only.
+- The `nginx/log` directory is bind-mounted and ignored by git (`.gitignore`).
+- `document_type` in Logstash output is deprecated in newer Elasticsearch versions; this setup targets the pinned 7.x images.
